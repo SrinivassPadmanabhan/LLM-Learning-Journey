@@ -1,5 +1,3 @@
 # LLM-Learning-Journey
-Day 1 What I have learnt
+This is the Resource which i have create to upload all my learning about LLM
 
-
-![alt text](image.png)
