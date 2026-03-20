@@ -1,4 +1,6 @@
-# LLM Scientist roadmap 
+
+# Day 1
+## LLM Scientist roadmap 
 
 1. LLM Architecture --> Architectural overview, Tokenization, Attention Mechanisms, Sampling Techniques
 2. Pre Training Models --> Data Preparation, Distribute Training, Training Optimisation, Monitoring
@@ -11,7 +13,7 @@
 ![alt text](Images/LLM_Scientist_Roadmap.png)
 
 
-# LLM Engineer Roadmap
+## LLM Engineer Roadmap
 
 1. Running LLMs --> LLM APIs, Open-Source LLMs, Prompt Engineering, Structuring Outputs
 2. Building a vector storage --> Ingesting documents, splitting documents, embedding models, vector databases
@@ -29,7 +31,7 @@ Link which i used to get the information is: https://github.com/mlabonne/llm-cou
 
 
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# What is there under the LLMs
+## What is there under the LLMs
 ### Each data flows through all this step in an LLM:
 1. Embedding
 2. Key
@@ -40,7 +42,7 @@ Link which i used to get the information is: https://github.com/mlabonne/llm-cou
 7. Down-projection
 8. Unembedding
 
-# Encoder and Decoder in the LLM models:
+## Encoder and Decoder in the LLM models:
 
 1. Encoder = a reader. Reads the entire document first, understands all of it, then answers questions about it. Sees every word — past, present, future in the sentence — simultaneously. Best at understanding. (Bi-directional)
 Example: Milk sales dropped after bank holiday weekend.
@@ -61,3 +63,42 @@ Ans: LLMs are best suited for tasks involving unstructured text—such as genera
 2. The one-sentence encoder vs decoder definition:
 Ans: Encoder-only models (BERT) read the entire input bidirectionally to build a deep contextual representation — best for understanding tasks like classification and search — while decoder-only models (GPT, Claude, LLaMA) generate text autoregressively by predicting one token at a time, seeing only previous tokens — best for generation and conversation
 
+# Day 2 module
+
+How to transformers evole over time:
+
+![alt text](image.png)
+
+There are 2 main approaches for the Transformers they are
+1. Masking Language model: Uses the encoder technique which tries to mask any one word in the sentence and tries to predict that word using the bi directional technique( encoder approach)
+2. Casual Language model: used the decoder technique which tries to predict the next token based on the previous token in the sequence. 
+
+ ![alt text](Images/Encoder_Decoder_Architecture.png)
+
+## Encoder architecture (Left side)
+
+Encoder: Input → Embedding → Encoder layers → Output (understanding)
+
+1. Input embedding + postion vector: COnversion of the words to embedding and the position vector added.
+2. Multi head attention: In this there is also a multi head attention is happening which reads the text from the bi-directional.
+3. Add & Norm: This happens to restrict it from exploding the values normalisation happens and Residual is added to handle the error
+4. Feed forward: Process each token further
+5. Repeat N times (Nx): Repeat this process multiple times.
+Used for: Classification, Search, Similarity
+
+
+## Decode architecture (Right Side):
+Previous tokens --> Decoder --> Next Token prediction
+
+1. Masked Multi-Head Attention: Based on the past words it tries to predict the future words without seeing it.
+2. Feed Forward: Process each token further
+3. Add & Norm: This happens to restrict it from exploding the values normalisation happens and Residual is added to handle the error
+4. Linear + Softmax (TOP PART): Converts output → probabilities and Predicts next word
+5. Repeat N time (Nx): first 3 steps to generate the desired which is needed.
+
+| Feature   | BERT (Encoder)         | GPT (Decoder)            |
+| --------- | ---------------------- | ------------------------ |
+| Attention | Full (bidirectional)   | Masked (only past)       |
+| Purpose   | Understand             | Generate                 |
+| Output    | Embeddings             | Next word                |
+| Use case  | Classification, search | Chat, content generation |
