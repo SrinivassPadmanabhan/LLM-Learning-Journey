@@ -71,10 +71,12 @@ How to transformers evole over time:
 
 There are 2 main approaches for the Transformers they are
 1. Masking Language model: Uses the encoder technique which tries to mask any one word in the sentence and tries to predict that word using the bi directional technique( encoder approach)
-2. Casual Language model: used the decoder technique which tries to predict the next token based on the previous token in the sequence. 
+2. Causal Language model: used the decoder technique which tries to predict the next token based on the previous token in the sequence. 
 
  ![alt text](Images/Encoder_Decoder_Architecture.png)
 
+
+Transformer architecture: Input → [Multi-Head Attention → Add & Norm] → [Feed Forward → Add & Norm] → Output
 ## Encoder architecture (Left side)
 
 Encoder: Input → Embedding → Encoder layers → Output (understanding)
@@ -91,10 +93,11 @@ Used for: Classification, Search, Similarity
 Previous tokens --> Decoder --> Next Token prediction
 
 1. Masked Multi-Head Attention: Based on the past words it tries to predict the future words without seeing it.
-2. Feed Forward: Process each token further
-3. Add & Norm: This happens to restrict it from exploding the values normalisation happens and Residual is added to handle the error
-4. Linear + Softmax (TOP PART): Converts output → probabilities and Predicts next word
-5. Repeat N time (Nx): first 3 steps to generate the desired which is needed.
+2. Cross attention layer (Which usually decoder only model will not have):  attends to the encoder output (K and V come from encoder, Q comes from decoder)
+3. Feed Forward: Process each token further
+4. Add & Norm: This happens to restrict it from exploding the values normalisation happens and Residual is added to handle the error
+5. Linear + Softmax (TOP PART): Converts output → probabilities and Predicts next word
+6. Repeat N time (Nx): first 3 steps to generate the desired which is needed.
 
 | Feature   | BERT (Encoder)         | GPT (Decoder)            |
 | --------- | ---------------------- | ------------------------ |
