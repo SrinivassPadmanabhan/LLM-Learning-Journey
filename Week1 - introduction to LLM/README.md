@@ -105,3 +105,41 @@ Previous tokens --> Decoder --> Next Token prediction
 | Purpose   | Understand             | Generate                 |
 | Output    | Embeddings             | Next word                |
 | Use case  | Classification, search | Chat, content generation |
+
+
+# Day 3 module
+![alt text](Images/Encoder_Decoder_Architecture.png)
+History of the Large language models AI.
+![alt text](Images/History_of_LLM.png)
+1. Non transformer model --> This was built before 2017 some of the models are Bag of words, Word2Vec, Attention
+2. Encoder Only model --> Bert, Distilbert, RoBERTA
+3. Decoder only model --> GPT models
+4. Encoder + Decoder models --> T5, Switch, Flan-T5
+
+a. Bag of Words: It considers language to be nothing more than an almost literal bag-of-words, and ignores the semantic nature or meaning of text.
+b. Word 2 Vec: 
+    It could capture meaning of words in vectore embeddings through neural networks. This embedding tries to capture the meaning of the words. This embedding has generate values from -1 to 1.
+    The number of the dimensions is generally a fixed size. In practical we will not understand what is the properties it represent in the real world. As they are learned through complex mathematical calculations.
+    Inputs --> Token (which splits the words to tokens may be same word can be a token or it can get splitted in the multiple token usually it takes the greedy approach) --> embedding --> average of the token embedding represents the sentence token.
+    It creates the static embedding for example it will take the same embedding for the bank when it is used in the river bank and even the same finance bank
+
+Attention allows the model to focus on part pf the input that are relevant to one another
+
+Attend to each signal, relevant to each other and amplify their signal
+
+INitially the contexually embedding which averages the total embedding which reduce becomes difficult for the decoder to understand the sequence but soon aftermath attention mechanism came into picture which reads each words embedding and the reads which embedding will be closer to the other in the decoder step.
+
+
+initially, in the encoder what is happening is reading the word and trying to predict and the next word  post that embedding has been passed to the decoder where the cross-attention mechanism happen which tries to translate the words. THis made the model very powerful in the translation task but it becomes difficult in the text classification.
+
+Post that the BERT model was created which uses the encoder only in which mask language technique to understand the word better
+post that GPT uses the decoder which uses the next word prediction based on the temperature the cretivity increases/ decreases
+
+self attention  which comprises of the  Relevance scoring and the combining information
+
+In feedforward network there is a concept of Mixture of experts (Sparse model) when one expert is activated other expert become deactivated, these experts are good at converting the words to vectors. To go to the correct experts there is a router is needed which reads the input sends it to the correct experts.
+
+Question:
+what is the difference between pipeline() and AutoModel?
+Ans: pipeline() is a high-level abstraction that simplifies model usage by handling tokenization, inference, and decoding internally. In contrast, AutoModel with AutoTokenizer provides low-level control over each step, which is essential for customization, debugging, and production use cases like streaming or custom decoding.
+
