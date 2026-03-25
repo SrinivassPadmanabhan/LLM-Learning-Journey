@@ -248,5 +248,6 @@ Ans:
     Key: what I offer (Summary version, like a lable)
     Value: what actually i have
 
-    For each sentence what other token can add a value to that token what additional details it can get is the query similar to the curious child in the class room who wants to learn about a topic. Key is like there is some thing which that other classmates are advertising they know something about the topic and value is like what they really know about the topic and how much they can contribute about the topic. The Final understanding about the topic is the blend of the knowledge what he got from the classmates.
+    Example:
+            For each sentence what other token can add a value to that token what additional details it can get is the query similar to the curious child in the class room who wants to learn about a topic. Key is like there is some thing which that other classmates are advertising they know something about the topic and value is like what they really know about the topic and how much they can contribute about the topic. The Final understanding about the topic is the blend of the knowledge what he got from the classmates.
     
