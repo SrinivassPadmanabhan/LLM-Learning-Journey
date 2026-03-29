@@ -28,7 +28,7 @@ Main advantage I am seeing here is that the transparency on how the LLM thinks w
 ### Some of the prompting techniques are
 1. **Zero shot** --> The model uses its pre-trained knowledge to directly answer the task.
 2. **Few Shot** --> Provide some example and ask that model to answer it accordingly
-3. **Zero shot + Chain of thoughts** --> Asking the model to think before answering without giving any example or context
+3. **Zero shot + Chain of thoughts** --> Asking the model to think before answering without giving any example or context but giving the guidelines to think
 4. **Few shot + Chain of thoughts** -->  Providing some relevant example and the reasoning behind which helps the model to think better
 5. **Automate Chain of thoughts** --> This is kind of the free flow without any structure and then try to answer the question
 6. **Automate Chain of thoughts + Self Consistency** --> This is also similar to the Auto COT but here the voting process will happen to decide which output is correct
