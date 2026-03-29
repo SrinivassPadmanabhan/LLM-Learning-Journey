@@ -13,7 +13,6 @@ Clean and direct prompts :
 
 ## Learning from the code
 The complaints which we had more than one problem but which is the primary cause for the problem to write the comment in such a way and which department needs to act accordingly.
-----------------------------------------------------------------
 |Model | Zero shot accuracy|Few shot accuracy|Remarks|
 |:---:|:---:|:---:|:--:|
 |BART	    |      5/5           |	     5/5	      | This has encoder which is making to correctly identify the correct labels|
