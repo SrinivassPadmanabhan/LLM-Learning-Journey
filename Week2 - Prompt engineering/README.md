@@ -14,10 +14,10 @@ Clean and direct prompts :
 ## Learning from the code
 The complaints which we had more than one problem but which is the primary cause for the problem to write the comment in such a way and which department needs to act accordingly.
 |Model | Zero shot accuracy|Few shot accuracy|Remarks|
-|:---:|:---:|:---:|:--:|
-|BART	    |      5/5           |	     5/5	      | This has encoder which is making to correctly identify the correct labels|
+|:-------------:|:------------------:|:------------------:|:--:|
+|BART	        |      5/5           |	     5/5	      | This has encoder which is making to correctly identify the correct labels|
 |DISTILLBERT	|      3/5	         |       3/5          | This is slightly getting confused with the similar labels such as return/ refund with payment issue might be we have to give selected labels using top_k methods which might be relevant to the problem (This top_k can be taken from other model result which might be correct label using that it will make it better i guess)|
-|QWEN	    |      1/5	         |       4/5          |	This has really taken the context in the prompt into consideration, so it made jump from 20% to 80%. Also here we are using another model to give the relevant example instead of blindly giving the model all the examples into the single prompt. Also we are using the XML tag which makes it easier for the model to use it to understand what is happening in the model|
+|QWEN	        |      1/5	         |       4/5          |	This has really taken the context in the prompt into consideration, so it made jump from 20% to 80%. Also here we are using another model to give the relevant example instead of blindly giving the model all the examples into the single prompt. Also we are using the XML tag which makes it easier for the model to use it to understand what is happening in the model|
 
 
 
