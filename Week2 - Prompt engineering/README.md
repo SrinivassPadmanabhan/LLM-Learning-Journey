@@ -32,8 +32,8 @@ Main advantage I am seeing here is that the transparency on how the LLM thinks w
 4. **Few shot + Chain of thoughts** -->  Providing some relevant example and the reasoning behind which helps the model to think better
 5. **Automate Chain of thoughts** --> This is kind of the free flow without any structure and then try to answer the question
 6. **Automate Chain of thoughts + Self Consistency** --> This is also similar to the Auto COT but here the voting process will happen to decide which output is correct
-7. **Tree of Thoughts** --> This is very structed way to think different path and choose the answer arbitrarily
-8. **Tree of Thoughts + Self Consistency** --> This is very structed way to think different path and choose the answer based on the voting and then produce the final output
+7. **Tree of Thoughts** --> This is very structured way to think different path and choose the answer arbitrarily
+8. **Tree of Thoughts + Self Consistency** --> This is very structured way to think different path and choose the answer based on the voting and then produce the final output
 9. **Meta Prompting** --> First plan then Execute 
 
 | Technique      | Key Idea                    | Example (Same Problem)                                                    |
@@ -92,4 +92,62 @@ Guidance + Validation → Low <br>
 High  → Zero-shot, Auto-CoT, ToT <br>
 Medium → Few-shot, Zero-shot CoT, Auto-CoT + SC, Meta <br>
 Low → Few-shot CoT, ToT + SC <br>
+
+# Day 10
+### Core Understanding
+1. LLMs follow patterns (examples), not instructions (rules)
+2. Prompting improves results, but model capability sets the ceiling
+3. Always ask: “Is this prompt issue or model issue?”
+### Prompt Design
+1. Examples > Rules (always prefer examples)
+2. Avoid overloading prompt with too many instructions
+3. Use step-based reasoning (Step 1, Step 2…)
+4. Be explicit about what NOT to do (negative examples help)
+### Task Structuring
+**Break tasks into:**
+    Understand → Transform → Output <br>
+**Don’t mix:**
+    reasoning + final answer → causes leakage<br>
+**For classification:**
+    use definitions, not just labels<br>
+### Common Failure Modes:**
+1. Pattern collapse (same answer everywhere)
+2. Label bias (first option gets picked)
+3. Instruction copying (“2–3 words”, “main issue is…”)
+4. Output drift (extra text, multiple answers)
+5. JSON breaking / truncation
+### Fix Strategies
+1. Reduce prompt complexity → simplify instead of adding rules
+2. Add contrast examples (good vs bad)
+3. Ground output in input words
+### Separate:
+1. reasoning
+2. classification
+3. formatting
+### Multi-Step Techniques
+1. CoT → improves reasoning
+2. Auto-CoT → unstable unless structured
+3. ToT → needs diversity (sampling)
+4. ToT without diversity = fake ToT
+### Generation Control
+1. do_sample=False → deterministic (same output)
+2. do_sample=True → diverse outputs (needed for ToT)
+3. Temperature controls creativity vs stability
+### Evaluation & Selection
+1. Don’t use vague scoring (1–10 ❌)
+2. Use rule-based scoring (0 / 5 / 10 ✅)
+3. Always define what “correct” means
+### Output Handling (VERY IMPORTANT) **LLM output is never reliable format**
+**Always:**
+1. extract JSON
+2. trim extra text
+3. enforce constraints in code
+### Final Mindset
+1. LLM = probabilistic generator, not deterministic system
+2. Prompt ≠ full solution
+3. Real solution = Prompt + Model + Post-processing + Logic
+
+IN this i have also learnt to handle the JSON formatted output as well 
+
+
 
