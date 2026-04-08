@@ -215,6 +215,15 @@ The complaints which we had more than one problem but which is the primary cause
 
 This clearly explains the encode and decoder performs better in this scenario.
 
+
+Also one more thing 
+usually in the generative model uses the three parameters --> temperature, top_p, top_k
+
+top_k --> selects the number of the probability output needs to be selected this runs first
+top_p --> select the number of the output untill the sum add up to the threshould probability is set up this will run second
+temperature --> whether it needs to be creative or deterministic is been selected by the temperature
+
+
 ## Question
 1. What are the 4 categories of tasks where LLMs add genuine value? Give one Tesco retail example for each category?
     4 places where LLM can be used are and their TESCO example
@@ -251,3 +260,4 @@ Ans:
     Example:
             For each sentence what other token can add a value to that token what additional details it can get is the query similar to the curious child in the class room who wants to learn about a topic. Key is like there is some thing which that other classmates are advertising they know something about the topic and value is like what they really know about the topic and how much they can contribute about the topic. The Final understanding about the topic is the blend of the knowledge what he got from the classmates.
     
+
