@@ -477,6 +477,8 @@ def semantic_chunk(text, model_name='all-MiniLM-L6-v2', percentile_threshold=85)
 
 Chunks are created with extra context attached, the extra context can be heading or the summary of the previous chunk to maintain the continuity of the chunks. This is mostly used in the Chat bots. <br>
 This is the chunking which has been created by the ANthropic where the chunking will be added to every chunking in this the for example some the pronouns are mentioned something like 'it', 'they', etc., to understand that you need to read the previous chunks and the try to add the context to the chunks.  IN this the chunking process will happen based on the Semantic or Sentence based on the use case but the context is added based on the Contextual chunking
+
+Chunk size is the most impactful RAG decision — too large and embeddings get fuzzy, too small and context is lost.
     
   ` Code `
   ```
