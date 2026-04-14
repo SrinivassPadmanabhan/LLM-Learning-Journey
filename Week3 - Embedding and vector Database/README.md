@@ -239,6 +239,29 @@ in this we are trying to similar thing.
 
 ![alt text](Images/Semantic_Search.png)
 
+```
+    Database size < 100K?
+  → Brute Force (simplest, fast enough)
+
+    Database 100K - 1M?
+    → FAISS IVFFlat (sweet spot)
+
+    Database 1M - 10M?
+    → FAISS HNSW (if memory OK) or ScaNN (if memory-constrained)
+
+    Database > 10M?
+    → ScaNN or FAISS IVFPQ
+
+    Need 100% recall?
+    → Brute Force only
+
+    Have Google Cloud?
+    → ScaNN
+
+    Need simplest setup?
+    → FAISS (pip install faiss-cpu)
+  ```
+
 In this course I have learnt different types of the semantic search algo I have learnt those are 
  - `Scann` --> It is a high perfroming  vector search. It uses 3 technique those are partitioning, Scoring, Rescouring. It is mainly used in the place where there are lot of data is there like billions of data and retrieve it efficiently
         a. Partitioning --> during the building it will partition the data into smaller partition and it will search only those partition
@@ -334,3 +357,151 @@ In this course I have learnt different types of the semantic search algo I have 
 
     print(neighbors, distances)
     ```
+
+# Day 16 Understanding the Chunking concepts
+***Chunking:*** It is the process of the Spliting the large text into the smaller text in order to fit in the context window
+### Good chunking will help in the following:
+- Improved RAG Retrieval Accuracy -->  Smaller, focused chunks reduce noise
+- Enhanced Generation Quality (LLM) --> Helps in reduction of hallucination
+- Increased System efficiency --> Reduce the latency
+- Better UX --> Easily readable
+
+### Different types of chunking 
+1. Fixed Size chunking
+2. Content Aware chunking
+3. Recursive character chunking
+4. Document structure-based chunking
+5. Semantic Chunking
+6. Contextual chunking
+
+
+***1. Fixed Size Chunking:***
+    Splits the text into smaller chunks based on the tokens length like 512, without any context awareness
+    
+  ` Code `
+
+  ```
+    def fixed_length_chunking(text, chunk_size=512):
+    return [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
+  ```
+--------------------------------------------------------------------------------------------------
+
+***2. Content Aware chunking***
+    Splits the text based on the natural flow of the document, such as para, section, sentence. In the below example I have tried the para level chunking. This maintain the readability
+    
+  ` Code `
+
+  ```
+def content_aware_chunking(text):
+    paragraphs = text.split("\n\n")  # split by paragraph
+    chunks = [p.strip() for p in paragraphs if p.strip()]
+    return chunks
+  ```
+
+--------------------------------------------------------------------------------------------------
+
+***3. Recursive character chunking***
+    This is also similar to the Content aware chunking it also splits based on the para, section, sentence. But it splits based on the character limit, tries to restrict it till that time. First it will try to chunk it based on the sentence if it didn't then it will go for the para, even if that didn't exceed then it will go for the section.<br>
+   <Center><b> This is best for the general purpose strategy</b></Center>
+    
+  ` Code `
+
+  ```
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+def recursive_chunking(text, chunk_size=512, chunk_overlap=50):
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap, separators=["\n\n", "\n", " ", ""])
+    chunks = text_splitter.split_text(text)
+    return chunks
+  ```
+--------------------------------------------------------------------------------------------------
+
+***4. Document Structure-Based Chunking***
+    This is the split the document based on the heading which gives meaningfull meaning. Each document to document you have to change the regex accordingly.
+    
+  ` Code `
+
+  ```
+import re
+
+def structure_based_chunking(text):
+    pattern = r"\nChapter |\nSection |\n\d+\.\s|\n"
+    sections = re.split( pattern,text)  # split by headings
+    chunks = []
+    
+    for sec in sections:
+        sec = sec.strip()
+        if sec:
+            chunks.append(sec)
+    
+    return chunks
+  ```
+--------------------------------------------------------------------------------------------------
+
+***5. Semantic Chunking***
+    In this we will run the cosine similarity and check the similarity for the adjacent sentence.
+    Compare each sentence to the next one
+    # cosine_similarity = 1.0 means identical meaning, 0.0 = unrelated, -1 = opposite
+    # We only care about neighbor pairs: 0->1, 1->2, 2->3, etc.
+    
+  ` Code `
+
+  ```
+def semantic_chunk(text, model_name='all-MiniLM-L6-v2', percentile_threshold=85):
+    model = SentenceTransformer(model_name)
+    sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', text) if s.strip()]
+    if len(sentences) < 2: # Can't find a break if there's only 1 sentence
+        return [text]
+    embeddings = model.encode(sentences)
+    similarities = []
+    for i in range(len(embeddings) - 1):
+        sim = cosine_similarity([embeddings[i]], [embeddings[i+1]])[0][0]
+        similarities.append(sim)
+    threshold = np.percentile(similarities, 100 - percentile_threshold)
+    breakpoints = [i for i, sim in enumerate(similarities) if sim < threshold]
+    chunks = []
+    start_idx = 0
+    for bp in breakpoints:
+        # bp is the index of the *last* sentence in the chunk
+        chunk = ' '.join(sentences[start_idx : bp + 1])
+        chunks.append(chunk)
+        start_idx = bp + 1 # next chunk starts after the break
+    chunks.append(' '.join(sentences[start_idx:]))
+
+    return chunks
+  ```
+
+
+--------------------------------------------------------------------------------------------------
+
+***6. Contextual Chunking***
+
+Chunks are created with extra context attached, the extra context can be heading or the summary of the previous chunk to maintain the continuity of the chunks. This is mostly used in the Chat bots. <br>
+This is the chunking which has been created by the ANthropic where the chunking will be added to every chunking in this the for example some the pronouns are mentioned something like 'it', 'they', etc., to understand that you need to read the previous chunks and the try to add the context to the chunks.  IN this the chunking process will happen based on the Semantic or Sentence based on the use case but the context is added based on the Contextual chunking
+    
+  ` Code `
+  ```
+def semantic_chunk(text, model_name='all-MiniLM-L6-v2', percentile_threshold=85):
+    model = SentenceTransformer(model_name)
+    sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', text) if s.strip()]
+    if len(sentences) < 2: # Can't find a break if there's only 1 sentence
+        return [text]
+    embeddings = model.encode(sentences)
+    similarities = []
+    for i in range(len(embeddings) - 1):
+        sim = cosine_similarity([embeddings[i]], [embeddings[i+1]])[0][0]
+        similarities.append(sim)
+    threshold = np.percentile(similarities, 100 - percentile_threshold)
+    breakpoints = [i for i, sim in enumerate(similarities) if sim < threshold]
+    chunks = []
+    start_idx = 0
+    for bp in breakpoints:
+        # bp is the index of the *last* sentence in the chunk
+        chunk = ' '.join(sentences[start_idx : bp + 1])
+        chunks.append(chunk)
+        start_idx = bp + 1 # next chunk starts after the break
+    chunks.append(' '.join(sentences[start_idx:]))
+
+    return chunks
+  ```
+
+
