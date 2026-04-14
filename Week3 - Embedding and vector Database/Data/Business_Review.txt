@@ -1,0 +1,48 @@
+Acme Corp Q3 2025 Business Review
+Author: Jane Doe, CFO
+Date: October 10, 2025
+
+1. Executive Summary
+Q3 was a strong quarter overall. We exceeded targets in two of three business units. 
+The main headwind was increased cloud infrastructure costs. However, this was offset by enterprise sales growth.
+
+2. Product Updates
+2.1 Analytics Dashboard v3
+We shipped the new analytics dashboard last week. User feedback has been positive so far.
+The load time decreased by 40% compared to v2. It is now the fastest dashboard in the market.
+This improvement was driven by the new caching layer. The team is proud of the result.
+
+2.2 Mobile App
+The iOS app is still in beta. Android release is scheduled for Q4.
+It has 2,000 daily active users. They report better stability than v1.
+The main complaint is login time. We will address this in the next sprint.
+
+3. Financial Performance
+3.1 Revenue
+Our Q3 revenue hit $2.1M, up 18% YoY. The main driver was enterprise contracts.
+Enterprise now represents 65% of total revenue, up from 52% last year.
+It increased due to the new dashboard improving sales demos. This also reduced churn in the SMB segment.
+
+3.2 Costs
+Total cloud spend was $420k, a 30% increase QoQ. This was unexpected.
+The primary cause was inefficient queries from the legacy reporting tool.
+We are migrating users off it in Q4. That should bring costs back down.
+
+3.3 Headcount
+We hired 12 engineers in Q3. The total team size is now 84.
+They are primarily focused on the data platform. It is critical for Q4 goals.
+
+4. Risks and Mitigation
+- Risk 1: Cloud costs. Mitigation: Finish migration, add query caps.
+- Risk 2: Hiring competition. Mitigation: Increase referral bonus to $10k.
+- Risk 3: SMB churn. It improved in Q3 but remains a watch item.
+
+5. Appendix: Key Metrics Table
+Metric         | Q2 2025 | Q3 2025 | Change
+Revenue        | $1.78M  | $2.10M  | +18%
+DAU            | 1,500   | 2,000   | +33%
+Cloud Spend    | $323k   | $420k   | +30%
+NPS            | 42      | 51      | +9
+
+Next steps: The leadership team will meet offsite in Denver next month. 
+They will finalize the 2026 roadmap there. Please fill the pre-read survey by Friday.

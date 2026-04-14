@@ -480,28 +480,80 @@ This is the chunking which has been created by the ANthropic where the chunking 
     
   ` Code `
   ```
-def semantic_chunk(text, model_name='all-MiniLM-L6-v2', percentile_threshold=85):
-    model = SentenceTransformer(model_name)
-    sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', text) if s.strip()]
-    if len(sentences) < 2: # Can't find a break if there's only 1 sentence
-        return [text]
-    embeddings = model.encode(sentences)
-    similarities = []
-    for i in range(len(embeddings) - 1):
-        sim = cosine_similarity([embeddings[i]], [embeddings[i+1]])[0][0]
-        similarities.append(sim)
-    threshold = np.percentile(similarities, 100 - percentile_threshold)
-    breakpoints = [i for i, sim in enumerate(similarities) if sim < threshold]
-    chunks = []
-    start_idx = 0
-    for bp in breakpoints:
-        # bp is the index of the *last* sentence in the chunk
-        chunk = ' '.join(sentences[start_idx : bp + 1])
-        chunks.append(chunk)
-        start_idx = bp + 1 # next chunk starts after the break
-    chunks.append(' '.join(sentences[start_idx:]))
+def need_contextual_chunking(chunk):
+    return bool(re.match(r"It|this|that|these|those|he|she|they|his|her|their|its|my|your|our", chunk.strip(), re.IGNORECASE))
 
-    return chunks
+def summarize_chunk(current_chunk, previous_Chunk, model=LLM):
+    messages = [
+        {"role": "system", "content": "You are a helpful to identify the pronouns in the current chunk and determine if it needs the previous chunk as context to be understood."},
+        {"role": "user", "content": f"Current chunk: '{current_chunk}' Previous chunk: '{previous_Chunk}' Does the current chunk contain pronouns that refer to entities in the previous chunk? If so, summarize the previous chunk to provide context for understanding the current chunk., if not respond with None."}
+    ]
+    LLM_response = model(messages, max_length=200, num_return_sequences=1)
+    summary = LLM_response[0]['generated_text'].strip()
+    return summary
+
+def contextual_chunking(text):
+    chunks = semantic_chunk(text)
+    contextual_chunks = []
+    for i, chunks in enumerate(chunks):
+        if i == 0:
+            contextual_chunks.append(chunks)
+        else:
+            if need_contextual_chunking(chunks):
+                print(f"{i}. Chunk: '{chunks}' needs context from previous chunk: '{contextual_chunks[-1]}'")
+                summary = summarize_chunk(chunks, contextual_chunks[-1])
+                if summary and summary.lower() != "none":
+                    contextual_chunks.append("Context: " + summary + "  actual chunk: " + chunks)
+                else:
+                    contextual_chunks.append(chunks)
+            else:
+                contextual_chunks.append(chunks)
+    return contextual_chunks
   ```
 
+  Since I took the HR policy there is no pronouns everywhere it is the organisation so i took the sample text something from the internet
 
+--------------------------------------------------------------------------------------
+### Evaluation strategy for the LLM Chunking 
+
+1. Semantic Coherence - Is each chunk about ONE thing?
+2. Context Completeness - Can I understand this chunk alone?
+3. Retrieval Quality - Do we actually find the right info?
+4. Efficiency - Are we efficient ?
+
+
+*1. Semantic Coherence:*<br>
+`What is this`: Is a single chunk about the same topic or not    
+`How it is measured`: We can use the cosine similarity to find the similarity of the chunks higher is good
+`Benefit`: Vector won't get confused by having a multiple topics in a single chunk
+----------------------------------------------------------------------------
+
+*2. Context Completeness:*<br>
+`What is this`: To understand a topic if I gave you just this chunk with no other info, would you be lost?     
+`How it is measured`: Ask a local LLM: "Does this chunk have pronouns/ some abbrevation with no explanation?
+`Benefit`: Help the retriever to find the right chunk
+-------------------------------------------------------------------------
+
+*3. Retrieval Quality:*<br>
+`What is this`: This is the real end-to-end test. I ask a question, do we retrieve the chunk that contains the answer?     
+`How it is measured`: You make 20 - 30 test questions. For each, check if the correct chunk is in top 3 results. Hit@3 = % success
+`Benefit`: You can have perfect coherence and completeness, but if your chunks are too big, embeddings get fuzzy and retrieval fails. This metric catches that
+
+`Code:`
+
+```
+def hit_at_k(query, expected_chunk, chunks, embedder, k=3):
+    query_emb = embedder.encode(query, convert_to_tensor=True)
+    chunk_embs = embedder.encode(chunks, convert_to_tensor=True)
+    scores = util.cos_sim(query_emb, chunk_embs)[0]
+    top_k = scores.topk(k).indices.tolist()
+    return any(expected_chunk in chunks[i] for i in top_k)
+```
+-------------------------------------------------------------------------
+
+*4. Efficiency:*<br>
+`What is this`: How many chunks did we make, how big are they, and how much did it cost?     
+`How it is measured`: Count chunks, avg words per chunk, std deviation. For Contextual: also count LLM calls.
+`Benefit`: If each chunk is 2000 words, you can’t fit many in your prompt
+
+I haven't the wrote the code for this but I have understood the concept....
