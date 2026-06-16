@@ -559,3 +559,79 @@ def hit_at_k(query, expected_chunk, chunks, embedder, k=3):
 `Benefit`: If each chunk is 2000 words, you can’t fit many in your prompt
 
 I haven't the wrote the code for this but I have understood the concept....
+
+
+
+
+
+
+
+# Day 17 Vector databases hands-on also to find the similarity search(semantic search):
+
+**Different types of Semantic search**
+1. **Euclidean Distance(L2)**: The length of the shortest distance between two points 
+Python Code
+```
+np.linalg.norm((vec1 - vec2), ord=2)
+```
+2. **Manhattan distance (L1)**: If one was constrained to move along one axis at a time
+Python Code
+```
+np.linalg.norm((vec1 - vec2), ord=1)
+```
+3. **Dot product**: Measures the magnitude of the projection one vector to another
+Python Code
+```
+np.dot(vec1, vec2)
+```
+4. **Cosine Similarity**: Measure the angle between the two vector with this you can find both are in the same direction or not.
+Python Code
+```
+from sklearn.metrics.pairwise import cosine_similarity
+cosine_similarity([vec1], [vec2])[0][0]
+```
+
+
+|Metric     |Range                  |	Cares about Magnitude?|	Best For                                |Speed  |
+|:---------:|:---------------------:|:-----------------------:|:---------------------------------------:|:-----:|
+|Euclidean	|0 to ∞, 0=identical    |	Yes	                  |K-means, normalized embeddings           |Medium |
+|Manhattan	|0 to ∞, 0=identical    |	Yes	                  |Sparse counts, L1 regularization         |Fast   |
+|Dot Product|-∞ to ∞, larger=similar|	Yes, heavily          |Fast retrieval, attention, raw embeddings|Fastest|
+|Cosine     |-1 to 1, 1=identical   |	No	                  |Text search, NLP embeddings              |Fast   |
+
+
+
+**Rule of thumb:**
+1. Sparse BM25 vectors → Dot product
+2. Dense text embeddings → Cosine similarity. If using FAISS IndexFlatIP with normalized vectors, that’s dot product = cosine
+3. Clustering embeddings → Euclidean after normalizing, or just use cosine
+4. Need to explain results → Manhattan/Euclidean are more intuitive than cosine
+<br><br>
+
+**Quick intuition:**
+1. If you care what direction the meaning points → cosine
+2. If you care how far apart things are in space → Euclidean
+3. If you want fast + magnitude matters → dot product
+4. If your data is **sparse counts** → Manhattan
+
+**The analogy where manhattan has to be used which i really liked is**
+1. It punishes big jumps less
+Say you have two shopping lists:
+
+Person 1: [10 apples, 0 bananas]
+Person 2: [0 apples, 10 bananas]
+Person 3: [5 apples, 5 bananas]
+
+$$Euclidean from [0,0]:$$
+
+$$ P1 distance = \sqrt{10^2 + 0^2} = 10$$
+$$ P3 distance = \sqrt{5^2 + 5^2} = 7.07 $$
+
+Manhattan from [0,0]:
+P1 distance = 10 + 0 = 10
+P3 distance = 5 + 5 = 10
+
+See? Manhattan says P1 and P3 are equally “far” from zero. Euclidean says P1 is farther. If one big value shouldn’t dominate, Manhattan is safer.
+
+
+
