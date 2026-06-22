@@ -373,6 +373,12 @@ In this course I have learnt different types of the semantic search algo I have 
 4. Document structure-based chunking
 5. Semantic Chunking
 6. Contextual chunking
+7. Sliding window chunking
+8. Proposition chunking
+9. Parent child chunking
+10. Agentic chunking
+11. Late chunking
+12. Hierarchial chunking
 
 
 ***1. Fixed Size Chunking:***
@@ -476,7 +482,7 @@ def semantic_chunk(text, model_name='all-MiniLM-L6-v2', percentile_threshold=85)
 ***6. Contextual Chunking***
 
 Chunks are created with extra context attached, the extra context can be heading or the summary of the previous chunk to maintain the continuity of the chunks. This is mostly used in the Chat bots. <br>
-This is the chunking which has been created by the ANthropic where the chunking will be added to every chunking in this the for example some the pronouns are mentioned something like 'it', 'they', etc., to understand that you need to read the previous chunks and the try to add the context to the chunks.  IN this the chunking process will happen based on the Semantic or Sentence based on the use case but the context is added based on the Contextual chunking
+This is the chunking which has been created by the Anthropic where the chunking will be added to every chunking in this the for example some the pronouns are mentioned something like 'it', 'they', etc., to understand that you need to read the previous chunks and the try to add the context to the chunks.  IN this the chunking process will happen based on the Semantic or Sentence based on the use case but the context is added based on the Contextual chunking
 
 Chunk size is the most impactful RAG decision — too large and embeddings get fuzzy, too small and context is lost.
     
@@ -514,6 +520,179 @@ def contextual_chunking(text):
   ```
 
   Since I took the HR policy there is no pronouns everywhere it is the organisation so i took the sample text something from the internet
+
+--------------------------------------------------------------------------------------------------
+
+***7. Sliding window Chunking***
+
+Sliding window chunking is similar to recursive chunking, but consecutive chunks intentionally overlap with each other to preserve context across chunk boundaries.
+
+   
+  ` Code `
+  ```
+  def sliding_window_chunking(text: str, window=TARGET_CHUNK_TOKENS, stride=150):
+    words = text.split()
+    chunks = []
+    for i in range(0, len(words), stride):
+        chunk = ' '.join(words[i:i + window])
+        if len(chunk.split()) > 50: chunks.append(chunk)
+        if i + window >= len(words): break
+    return chunks
+
+
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=500,
+    chunk_overlap=100
+)
+
+chunks = splitter.split_text(document)
+  ```
+--------------------------------------------------------------------------------------------------
+
+***8. Proposition Chunking***
+
+This is the chunking where it will store each fact into each chunk. But the biggest which i faced with this is the most of time our question will not be data retrieval but some basic analysis related question which it struggles a lot.
+
+` Code `
+  ```
+  def proposition_chunking(text: str):
+    global LLM
+    if LLM is None:
+        LLM = pipeline("text-generation", model="microsoft/Phi-3-mini-4k-instruct",
+                       device="cpu", torch_dtype="auto", trust_remote_code=True)
+
+    # Do it in 2k char batches to avoid context limit
+    batch_size = 2000
+    batches = [text[i:i+batch_size] for i in range(0, len(text), batch_size)]
+    all_props = []
+    for batch in tqdm(batches, desc="Proposition chunking"):
+        prompt = f"Break the following into simple, self-contained facts. One fact per line:\n\n{batch}\n\nFacts:"
+        resp = LLM(prompt, max_new_tokens=512, do_sample=False, return_full_text=False)
+        props = [p.strip() for p in resp[0]['generated_text'].split("\n") if p.strip()]
+        all_props.extend(props)
+    return all_props
+  ```
+  --------------------------------------------------------------------------------------------------
+
+***9. Parent-Child Chunking***
+If we use a large chunk then the retrival quality is getting compromised whereas if we use the very small fact like propostition then it will too specific inorder to fix it we have started using the Partent child the parent will store the relatively bigger chunk about a topic(more like a recursive chunking) and the child will be very specific to a single fact (like proposition chunking). when the query comes it will search the child and gives back the parent which will have the even more better chunking information.
+` Code `
+  ```
+  def parent_child_chunking(text: str, child_size=200, parent_size=1500):
+    parent_splitter = RecursiveCharacterTextSplitter(chunk_size=parent_size*4, chunk_overlap=200)
+    child_splitter = RecursiveCharacterTextSplitter(chunk_size=child_size*4, chunk_overlap=50)
+    parents = parent_splitter.split_text(text)
+    children = []
+    parent_map = []
+    for i, p in enumerate(parents):
+        c = child_splitter.split_text(p)
+        children.extend(c)
+        parent_map.extend([i] * len(c))
+    return {"children": children, "parents": parents, "parent_map": parent_map}
+  ```
+  In my code i did the sliding window chunking for both parent and child
+
+  --------------------------------------------------------------------------------------------------
+
+***10. Agentic Chunking***
+Agentic chunking is the chunking which uses the agent to do the reasons and creates the most meaningful chunks without any token limitation.
+
+This like asking the llm that read this document and chunk it according and ask it to reason it 
+` Code `
+  ```
+  def agentic_chunking(text: str):
+    global LLM
+    if LLM is None:
+        LLM = pipeline("text-generation", model="microsoft/Phi-3-mini-4k-instruct",
+                       device="cpu", torch_dtype="auto", trust_remote_code=True)
+    prompt = f"""Split this document into semantically coherent chunks of 150-350 words.
+Each chunk must be self-contained. Return as JSON list of strings.
+Document: {text[:12000]}
+JSON:""" # Truncate for context limit
+    resp = LLM(prompt, max_new_tokens=2048, do_sample=False, return_full_text=False)
+    try:
+        return json.loads(resp[0]['generated_text'])
+    except:
+        return recursive_chunking(text) # fallback
+  ```
+  --------------------------------------------------------------------------------------------------
+
+***10. Late Chunking***
+As the name suggests, chunking happens at the end of the embedding process. Instead of splitting the document first, the entire document is processed by the transformer so that tokens can attend to information across the document.
+
+This helps preserve context, especially when pronouns or references depend on information that may eventually end up in a different chunk.
+
+Example:
+
+Tesla was founded in 2003.
+It is headquartered in Austin.
+
+Traditional Chunking:
+Chunk 1: Tesla was founded in 2003.
+Chunk 2: It is headquartered in Austin.
+
+
+When embedding Chunk 2 independently, the model cannot see Tesla and may lose the connection between "It" and Tesla.
+
+
+Late Chunking:
+
+Entire Document
+      ↓
+Transformer Processing
+      ↓
+Attention Scores
+      (Query(It) · Key(Tesla))
+      ↓
+Attention Output
+      (0.45 × V(Tesla) + 0.20 × V(Austin) + ...)
+      ↓
+Updated Hidden States
+      ↓
+Contextual Representations
+      ↓
+Chunking
+      ↓
+Chunk Embeddings
+      ↓
+Retrieval
+
+The hidden state of "It" does not become Tesla. Instead, it acquires Tesla-related semantic information through attention. Therefore, when chunk embeddings are created, the chunk containing "It is headquartered in Austin" still carries information related to Tesla, improving retrieval quality.
+
+
+
+  # RAG Chunking Strategies
+
+| Strategy | Key Idea | Pros | Cons | Use Case |
+|-----------|----------|------|------|----------|
+| Fixed Length | Cut every N tokens | Fast, predictable | Breaks sentences | Baseline, logs |
+| Content Aware | Split on `\n\n` paragraphs | Respects author structure | Paragraph size varies | Blogs, articles |
+| Recursive | Try `\n\n → \n → .` separators | Best general purpose | Can still split related sentences | Default for 80% of RAG systems |
+| Structure Based | Split on headings (`#`, Chapter, Section) | Matches document structure | Fails on unstructured docs | PDFs with TOC, books |
+| Semantic | Cut when embedding similarity drops | Topic-based chunks | Slow, tuning needed | Research papers |
+| Contextual | Semantic chunking + LLM adds previous context | No dangling references ("it", "this") | LLM cost, slower | Q&A documentation |
+| Sliding Window | Overlapping chunks | Prevents context loss at boundaries | Increased storage and retrieval cost | Transcripts, chat logs |
+| Proposition | LLM converts text into atomic facts | Highest retrieval precision | Produces many tiny chunks | Fact-based Q&A bots |
+| Parent-Child | Index small chunks, retrieve larger parent chunk | Good retrieval + rich context | More complex setup | Long PDFs (>20 pages) |
+| Agentic | LLM decides chunk boundaries | Most intelligent chunking | Slow, expensive, non-deterministic | Legal, medical documents |
+| Late Chunking | Embed entire document before slicing embeddings | State-of-the-art retrieval quality | Requires advanced embedding models and GPU | Accuracy-critical systems |
+| Hierarchical | Chunk → Summarize → Chunk summaries | Scales to very large documents | Complex implementation | Books, codebases, million-token corpora |
+
+## Quick Recommendation
+
+| Scenario | Recommended Strategy |
+|-----------|---------------------|
+| Beginner RAG | Recursive |
+| Blog / Article Search | Content Aware + Recursive |
+| Chatbot over Documentation | Parent-Child |
+| Meeting Transcripts | Sliding Window |
+| Research Papers | Semantic |
+| Enterprise Knowledge Base | Parent-Child + Semantic |
+| Legal / Medical | Agentic |
+| Highest Accuracy | Late Chunking |
+| Massive Documents | Hierarchical |
 
 --------------------------------------------------------------------------------------
 ### Evaluation strategy for the LLM Chunking 
