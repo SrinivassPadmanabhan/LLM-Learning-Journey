@@ -619,7 +619,7 @@ JSON:""" # Truncate for context limit
   ```
   --------------------------------------------------------------------------------------------------
 
-***10. Late Chunking***
+***11. Late Chunking***
 As the name suggests, chunking happens at the end of the embedding process. Instead of splitting the document first, the entire document is processed by the transformer so that tokens can attend to information across the document.
 
 This helps preserve context, especially when pronouns or references depend on information that may eventually end up in a different chunk.
@@ -660,6 +660,45 @@ Chunk Embeddings
 Retrieval
 
 The hidden state of "It" does not become Tesla. Instead, it acquires Tesla-related semantic information through attention. Therefore, when chunk embeddings are created, the chunk containing "It is headquartered in Austin" still carries information related to Tesla, improving retrieval quality.
+` Code `
+```
+  def late_chunking(text: str, chunk_tokens=256):
+    from transformers import AutoModel, AutoTokenizer
+    model = AutoModel.from_pretrained('jinaai/jina-embeddings-v3', trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained('jinaai/jina-embeddings-v3', trust_remote_code=True)
+
+    inputs = tokenizer(text, return_tensors='pt', truncation=True, max_length=8192)
+    embeddings = model(**inputs).last_hidden_state[0].detach().numpy()
+
+    chunks = [embeddings[i:i+chunk_tokens] for i in range(0, len(embeddings), chunk_tokens)]
+    return chunks # Note: these are embeddings, not text
+```
+
+  --------------------------------------------------------------------------------------------------
+
+***12. Hierarchical Chunking***
+Hierarchical chunking organizes a document into multiple levels (document → chapter → section → paragraph) and preserves the structural relationships between chunks. It enables retrieval systems to navigate from broad topics to specific content, improving search efficiency and contextual retrieval.
+
+` Code `
+
+```
+def hierarchical_chunking(text: str):
+    # Level 1: big chunks
+    l1 = recursive_chunking(text, chunk_size=1500, overlap=100)
+    # Level 2: summarize each L1, then chunk summaries
+    global LLM
+    if LLM is None:
+        LLM = pipeline("text-generation", model="microsoft/Phi-3-mini-4k-instruct",
+                       device="cpu", torch_dtype="auto", trust_remote_code=True)
+    summaries = []
+    for chunk in tqdm(l1, desc="Hierarchical L1->L2"):
+        prompt = f"Summarize in 2 sentences: {chunk[:2000]}"
+        resp = LLM(prompt, max_new_tokens=100, do_sample=False, return_full_text=False)
+        summaries.append(resp[0]['generated_text'])
+    l2_text = "\n\n".join(summaries)
+    l2 = recursive_chunking(l2_text, chunk_size=300, overlap=50)
+    return {"L1": l1, "L2": l2}
+ ```
 
 
 
@@ -747,7 +786,7 @@ I haven't the wrote the code for this but I have understood the concept....
 
 # Day 17 Vector databases hands-on also to find the similarity search(semantic search):
 
-**Different types of Semantic search**
+**Different Similarity Metrics used in Semantic Search**
 1. **Euclidean Distance(L2)**: The length of the shortest distance between two points 
 Python Code
 ```
