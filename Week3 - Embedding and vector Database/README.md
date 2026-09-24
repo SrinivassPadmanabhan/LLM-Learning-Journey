@@ -733,57 +733,6 @@ def hierarchical_chunking(text: str):
 | Highest Accuracy | Late Chunking |
 | Massive Documents | Hierarchical |
 
---------------------------------------------------------------------------------------
-### Evaluation strategy for the LLM Chunking 
-
-1. Semantic Coherence - Is each chunk about ONE thing?
-2. Context Completeness - Can I understand this chunk alone?
-3. Retrieval Quality - Do we actually find the right info?
-4. Efficiency - Are we efficient ?
-
-
-*1. Semantic Coherence:*<br>
-`What is this`: Is a single chunk about the same topic or not    
-`How it is measured`: We can use the cosine similarity to find the similarity of the chunks higher is good
-`Benefit`: Vector won't get confused by having a multiple topics in a single chunk
-----------------------------------------------------------------------------
-
-*2. Context Completeness:*<br>
-`What is this`: To understand a topic if I gave you just this chunk with no other info, would you be lost?     
-`How it is measured`: Ask a local LLM: "Does this chunk have pronouns/ some abbrevation with no explanation?
-`Benefit`: Help the retriever to find the right chunk
--------------------------------------------------------------------------
-
-*3. Retrieval Quality:*<br>
-`What is this`: This is the real end-to-end test. I ask a question, do we retrieve the chunk that contains the answer?     
-`How it is measured`: You make 20 - 30 test questions. For each, check if the correct chunk is in top 3 results. Hit@3 = % success
-`Benefit`: You can have perfect coherence and completeness, but if your chunks are too big, embeddings get fuzzy and retrieval fails. This metric catches that
-
-`Code:`
-
-```
-def hit_at_k(query, expected_chunk, chunks, embedder, k=3):
-    query_emb = embedder.encode(query, convert_to_tensor=True)
-    chunk_embs = embedder.encode(chunks, convert_to_tensor=True)
-    scores = util.cos_sim(query_emb, chunk_embs)[0]
-    top_k = scores.topk(k).indices.tolist()
-    return any(expected_chunk in chunks[i] for i in top_k)
-```
--------------------------------------------------------------------------
-
-*4. Efficiency:*<br>
-`What is this`: How many chunks did we make, how big are they, and how much did it cost?     
-`How it is measured`: Count chunks, avg words per chunk, std deviation. For Contextual: also count LLM calls.
-`Benefit`: If each chunk is 2000 words, you can’t fit many in your prompt
-
-I haven't the wrote the code for this but I have understood the concept....
-
-
-
-
-
-
-
 # Day 17 Vector databases hands-on also to find the similarity search(semantic search):
 
 **Different Similarity Metrics used in Semantic Search**
@@ -850,6 +799,185 @@ P1 distance = 10 + 0 = 10
 P3 distance = 5 + 5 = 10
 
 See? Manhattan says P1 and P3 are equally “far” from zero. Euclidean says P1 is farther. If one big value shouldn’t dominate, Manhattan is safer.
+
+
+# Storing the information in the vector DB and comparing the results with manual search vs the Vector DB Search
+
+ChromaDB is an open-source vector database designed specifically for AI applications. It allows to search for information based on its semantic meaning rather than exact keyword matches
+
+In this DB the Collections are almost like the table here we can create a collection and we can mention the search strategy what we are planning we can mention it in the meta data by default it uses the euclidean distance. You can use the store the information of the documents and their embeddings as well.
+
+Also it provides the utils for creating the embeddings
+
+` Code `
+
+```
+fc_collection = client.get_or_create_collection(name="fixed_length_chunks",metadata={"hnsw:space": "cosine"})
+fc_collection.add(documents=fc_chunks, embeddings=fc_embeddings, ids = [f"Chunks_{i}"for i in range(len(fc_chunks))])
+content_collection = client.get_or_create_collection(name="content_aware_chunks",metadata={"hnsw:space": "cosine"})
+content_collection.add(documents=content_chunks, embeddings=content_embeddings, ids = [f"Chunks_{i}"for i in range(len(content_chunks))])
+recursive_collection = client.get_or_create_collection(name="recursive_chunks",metadata={"hnsw:space": "cosine"})
+recursive_collection.add(documents=recursive_chunks, embeddings=recursive_embeddings, ids = [f"Chunks_{i}"for i in range(len(recursive_chunks))])
+structure_collection = client.get_or_create_collection(name="structure_based_chunks",metadata={"hnsw:space": "cosine"})
+structure_collection.add(documents=structure_chunks, embeddings=structure_embeddings, ids = [f"Chunks_{i}"for i in range(len(structure_chunks))])
+semantic_collection = client.get_or_create_collection(name="semantic_chunks",metadata={"hnsw:space": "cosine"})
+semantic_collection.add(documents=semantic_chunks, embeddings=semantic_embeddings, ids = [f"Chunks_{i}"for i in range(len(semantic_chunks))])
+contextual_collection = client.get_or_create_collection(name="contextual_chunks",metadata={"hnsw:space": "cosine"})
+contextual_collection.add(documents=contextual_chunks, embeddings=contextual_embeddings, ids = [f"Chunks_{i}"for i in range(len(contextual_chunks))])
+sliding_collection = client.get_or_create_collection(name="sliding_window_chunks",metadata={"hnsw:space": "cosine"})
+sliding_collection.add(documents=sliding_chunks, embeddings=sliding_embeddings, ids = [f"Chunks_{i}"for i in range(len(sliding_chunks))])
+child_collection = client.get_or_create_collection(name="parent_child_chunks",metadata={"hnsw:space": "cosine"})
+child_collection.add(documents=child_chunks, embeddings=child_embeddings, ids = [f"Child_Chunks_{i}"for i in range(len(child_chunks))])
+parent_collection = client.get_or_create_collection(name="parent_chunks",metadata={"hnsw:space": "cosine"})
+parent_collection.add(documents=parent_chunks, embeddings=parent_embeddings, ids = [f"Parent_Chunks_{i}"for i in range(len(parent_chunks))])
+parent_map_collection = client.get_or_create_collection(name="parent_map",metadata={"hnsw:space": "cosine"})
+# parent_map_collection.add(documents=parent_map, ids = [f"Parent_Map_{i}"for i in range(len(parent_map))])
+print("All chunking strategies have been processed and stored in ChromaDB.")
+```
+
+```
+def retrieve_relevant_chunks_with_context(query, chunk_embeddings, collection, top_k=3):
+    query_embedding = EMBED_MODEL.encode([query])
+    cosine_similarities = cosine_similarity(query_embedding, chunk_embeddings)[0]
+    results = collection.query(query_embeddings=query_embedding, n_results=top_k)
+    results['manual_cosine_similarities']  = cosine_similarities[np.argsort(cosine_similarities)[-top_k:][::-1]]
+    return results
+
+```
+```
+collection_names = ["fixed_length_chunks", "content_aware_chunks", "recursive_chunks", "structure_based_chunks",
+                    "semantic_chunks", "contextual_chunks", "sliding_window_chunks", "parent_child_chunks", "parent_chunks"]
+collection_list = [fc_collection, content_collection, recursive_collection, structure_collection,
+                   semantic_collection, contextual_collection, sliding_collection, child_collection, parent_collection]
+embedding_list = [fc_embeddings, content_embeddings, recursive_embeddings, structure_embeddings,
+                  semantic_embeddings, contextual_embeddings, sliding_embeddings, child_embeddings, parent_embeddings]
+results_dict = {}
+
+for query in queries:
+    print(f"\nQuery: {query}")
+    for name, collection, embeddings in zip(collection_names, collection_list, embedding_list):
+        results = retrieve_relevant_chunks_with_context(query, embeddings, collection)
+        print(f"\nCollection: {name}")
+        results_dict[(query, name)] = results
+```
+
+
+## What are the best retrival and how can we go about it.
+
+```
+                                      Retrieval
+                                           │
+         ┌─────────────────────────────────┼─────────────────────────────────┐
+         │                                 │                                 │
+         │                                 │                                 │
+  Sparse Retrieval                  Dense Retrieval                  Hybrid Retrieval
+         │                                 │                                 │
+         │                                 │                                 │
+ ┌───────┴────────┐              ┌─────────┴─────────┐          ┌────────────┴────────────┐
+ │                │              │                   │          │                         │
+Keyword Search    BM25      Exact Search            ANN      Sparse Retrieval      Dense Retrieval
+(String Match) (Keyword       (Brute Force)         │          (BM25)              (Embeddings)
+               Ranking)                             │
+                                                    │
+                                    ┌───────────────┼────────────────┐────────────────┐
+                                    │               │                │                | 
+                                    HNSW            IVF              PQ             ScaNN
+                            (Graph-based)   (Cluster-based)  (Vector Compression)  (Google ANN Library)
+
+```
+Retrieval Strategy:
+It is a technique to pull the context from the documents/ chunks
+
+There are different types of retrieval are there and they are 
+1. Sparse Retrieval
+2. Dense Retrieval
+3. Hybrid Retrieval
+
+Sparse Retrieval
+    Sparse retrieval is a search method that finds documents based on exact keyword matches and word frequency. This is used in the Elastic search and open search.
+
+## Keyword search:
+It is nothing but searching same key words in the each chunks and trying to find the chunks which has the words
+
+## BM25 search:
+
+BM25 is a probabilistic ranking algorithm used in sparse retrieval. Unlike simple keyword search, it ranks documents by considering **how frequently a query term appears in a document (TF)**, **how rare the term is across the corpus (IDF)**, and **normalizes for document length**. It is widely used in search engines and RAG systems for exact keyword matching and is often combined with dense retrieval in hybrid search.
+
+
+$$
+\text{Score} =
+\text{IDF} \times
+\frac{\text{TF} \times (k_1 + 1)}
+{\text{TF} + k_1 \left(1 - b + b \times \frac{|D|}{\text{avgDL}}\right)}
+$$
+
+
+1. TF (Term Frequency) means how many time does the word appear higher the frequence in a single document it means the higher the score
+2. IDF (Inverse Document Frequency) means Is this common word or specific word. If the word appears almost present in all the document then the score comes down.
+3. D represents the Document length. if the number of the words in different documents is changing then the normalisation will be started, the longer the document it is when compared to the other documents then the penalisation it will start doing it
+4. K1 --> Controls the TF Saturation. It ensures that repeating the same keyword many times does not increase the document's relevance linearly. After a certain point, additional occurrences contribute less to the score
+5. b --> document length normalization. It prevents long documents from receiving unfairly high scores simply because they contain more words, while avoiding excessive penalties for documents that are naturally long. (0 means no normalisation, 1 means full normalisation, usually for the balanced approach it will be 0.75)
+
+
+Simplified formula easy to remember
+$$
+Score = Rare word(IDF) * Frequency Appears(TF) * Not Excessive long document
+$$
+
+
+
+--------------------------------------------------------------------------------------
+# Day 19 Evaluation strategy for the LLM Chunking 
+
+1. Semantic Coherence - Is each chunk about ONE thing?
+2. Context Completeness - Can I understand this chunk alone?
+3. Retrieval Quality - Do we actually find the right info?
+4. Efficiency - Are we efficient ?
+
+
+*1. Semantic Coherence:*<br>
+`What is this`: Is a single chunk about the same topic or not    
+`How it is measured`: We can use the cosine similarity to find the similarity of the chunks higher is good
+`Benefit`: Vector won't get confused by having a multiple topics in a single chunk
+----------------------------------------------------------------------------
+
+*2. Context Completeness:*<br>
+`What is this`: To understand a topic if I gave you just this chunk with no other info, would you be lost?     
+`How it is measured`: Ask a local LLM: "Does this chunk have pronouns/ some abbrevation with no explanation?
+`Benefit`: Help the retriever to find the right chunk
+-------------------------------------------------------------------------
+
+*3. Retrieval Quality:*<br>
+`What is this`: This is the real end-to-end test. I ask a question, do we retrieve the chunk that contains the answer?     
+`How it is measured`: You make 20 - 30 test questions. For each, check if the correct chunk is in top 3 results. Hit@3 = % success
+`Benefit`: You can have perfect coherence and completeness, but if your chunks are too big, embeddings get fuzzy and retrieval fails. This metric catches that
+
+`Code:`
+
+```
+def hit_at_k(query, expected_chunk, chunks, embedder, k=3):
+    query_emb = embedder.encode(query, convert_to_tensor=True)
+    chunk_embs = embedder.encode(chunks, convert_to_tensor=True)
+    scores = util.cos_sim(query_emb, chunk_embs)[0]
+    top_k = scores.topk(k).indices.tolist()
+    return any(expected_chunk in chunks[i] for i in top_k)
+```
+-------------------------------------------------------------------------
+
+*4. Efficiency:*<br>
+`What is this`: How many chunks did we make, how big are they, and how much did it cost?     
+`How it is measured`: Count chunks, avg words per chunk, std deviation. For Contextual: also count LLM calls.
+`Benefit`: If each chunk is 2000 words, you can’t fit many in your prompt
+
+I haven't the wrote the code for this but I have understood the concept....
+
+
+
+
+
+
+
+
 
 
 
